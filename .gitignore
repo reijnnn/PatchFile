@@ -1,0 +1,10 @@
+*.o
+README.md
+
+Examples/*
+!Examples/*.cpp
+!Examples/Makefile
+
+Tests/*
+!Tests/*.cpp
+!Tests/Makefile
