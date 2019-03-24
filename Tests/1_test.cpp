@@ -29,18 +29,18 @@ int main(int argc, char* argv[]) {
 		int ROW_FILE_COUNT = rand() % 1000 + 100;
 
 		fstream fileOld;
-	   fileOld.open(OLD_FILE_NAME.c_str());
-	   if(!fileOld.is_open()) {
-		   cerr << "Can not create or open file " << OLD_FILE_NAME << endl;
-		   return 1;
-	   }
+		fileOld.open(OLD_FILE_NAME.c_str());
+		if(!fileOld.is_open()) {
+			cerr << "Can not create or open file " << OLD_FILE_NAME << endl;
+			return 1;
+		}
 
 		fstream fileNew;
-	   fileNew.open(NEW_FILE_NAME.c_str());
-	   if(!fileNew.is_open()) {
-		   cerr << "Can not create or open file " << NEW_FILE_NAME << endl;
-		   return 1;
-	   }
+		fileNew.open(NEW_FILE_NAME.c_str());
+		if(!fileNew.is_open()) {
+			cerr << "Can not create or open file " << NEW_FILE_NAME << endl;
+			return 1;
+		}
 
 		for(int i = 0; i < ROW_FILE_COUNT; i++) {
 
@@ -68,8 +68,7 @@ int main(int argc, char* argv[]) {
 		// Emulating on test data
 		PatchFile *patch = new PatchFile();
 
-		cout << "Starting new test with param: "
-			  << "ROW_FILE_COUNT = " << ROW_FILE_COUNT << endl;
+		cout << "Starting new test with param: " << "ROW_FILE_COUNT = " << ROW_FILE_COUNT << endl;
 
 		clock_t time_start = clock();
 
@@ -81,31 +80,31 @@ int main(int argc, char* argv[]) {
 		cout << "Finished. Time elapsed = " << double(time_end - time_start) / CLOCKS_PER_SEC << endl;
 
 		// Validating result
-	   fileNew.open(NEW_FILE_NAME.c_str());
-	   if(!fileNew.is_open()) {
-		   cerr << "Can not create or open file " << NEW_FILE_NAME << endl;
-		   return 1;
-	   }
+		fileNew.open(NEW_FILE_NAME.c_str());
+		if(!fileNew.is_open()) {
+			cerr << "Can not create or open file " << NEW_FILE_NAME << endl;
+			return 1;
+		}
 
 		vector<string> vecFileNew;
 		string line;
 		while(getline(fileNew, line)) {
 		   vecFileNew.push_back(line);
-	   }
-	   fileNew.close();
+		}
+		fileNew.close();
 
 		fstream fileNewPatched;
-	   fileNewPatched.open(NEW_PATCHED_FILE_NAME.c_str());
-	   if(!fileNewPatched.is_open()) {
-		   cerr << "Can not create or open file " << NEW_PATCHED_FILE_NAME << endl;
-		   return 1;
-	   }
+		fileNewPatched.open(NEW_PATCHED_FILE_NAME.c_str());
+		if(!fileNewPatched.is_open()) {
+			cerr << "Can not create or open file " << NEW_PATCHED_FILE_NAME << endl;
+			return 1;
+		}
 
 		vector<string> vecFileNewPatched;
 		while(getline(fileNewPatched, line)) {
 		   vecFileNewPatched.push_back(line);
-	   }
-	   fileNewPatched.close();
+		}
+		fileNewPatched.close();
 
 		if((int)vecFileNewPatched.size() != (int)vecFileNew.size()) {
 			cerr << NEW_FILE_NAME << " and " << NEW_PATCHED_FILE_NAME << " are having different size" << endl;
@@ -119,7 +118,6 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
-
 
    return 0;
 }

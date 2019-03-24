@@ -9,5 +9,5 @@ int main(int argc, char* argv[]) {
 	// -merge old_file.txt patch_file.txt new_patch_file.txt
 	patch->startPatchUseCMD(argc, argv);
 
-   return 0;
+	return 0;
 }

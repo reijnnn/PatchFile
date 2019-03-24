@@ -11,5 +11,5 @@ int main(int argc, char* argv[]) {
 	// -merge old_file.txt patch_file.txt new_patch_file.txt
 	patch->mergePatch("old_file.txt", "patch_file.txt", "new_patched_file.txt");
 
-   return 0;
+	return 0;
 }

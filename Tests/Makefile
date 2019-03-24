@@ -1,9 +1,8 @@
-CC      				= g++
+CC = g++
 
-LIB_DIR           = ../
-LIB_FILE_NAME		= PatchFile
+LIB_DIR = ../
+LIB_FILE_NAME = PatchFile
 
-#EXAMPLE_FILE_NAME = 1_use_cmd
 EXAMPLE_FILE_NAME = 1_test
 
 all: build
