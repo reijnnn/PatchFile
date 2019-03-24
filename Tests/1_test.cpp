@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
 
 		clock_t time_end = clock();
 
-		cout << "Finished. Time elapsed = " << double(time_end - time_start) / CLOCKS_PER_SEC << endl;
+		cout << "Finished. Time elapsed: " << double(time_end - time_start) / CLOCKS_PER_SEC << endl;
 
 		// Validating result
 		fileNew.open(NEW_FILE_NAME.c_str());
@@ -119,5 +119,5 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-   return 0;
+	return 0;
 }

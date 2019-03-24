@@ -17,4 +17,4 @@ $(EXAMPLE_FILE_NAME).o: $(EXAMPLE_FILE_NAME).cpp
 	$(CC) -c $(EXAMPLE_FILE_NAME).cpp
 
 clean:
-	rm -f *.o && rm -f $(LIB_DIR)/*.o
+	rm -f *.o && rm -f $(LIB_DIR)/*.o && rm -f *.txt

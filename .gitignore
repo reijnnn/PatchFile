@@ -1,5 +1,4 @@
 *.o
-README.md
 
 Examples/*
 !Examples/*.cpp
