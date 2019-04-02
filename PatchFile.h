@@ -5,10 +5,17 @@ class PatchFile
 {
 private:
 
+	std::vector<std::string> vecFileOld, vecFileNew;
+	std::vector<long long> vecHashOld, vecHashNew;
+
 	void printHelp();
 	void printUseHelp();
 	bool fileExists(const std::string& filename);
 	long long calcStringHash(std::string &str);
+	std::string prepareFileRow(char operation, int row, std::string text);
+	std::vector<std::string> calcMinPrescription(int stOldPos, int enOldPos, int stNewPos, int enNewPos);
+	std::vector<int> calcLastRowDistanceInverse(int stOldPos, int enOldPos, int stNewPos, int enNewPos);
+	std::vector<int> calcLastRowDistance(int stOldPos, int enOldPos, int stNewPos, int enNewPos);
 
 public:
 

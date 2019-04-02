@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <vector>
 #include "PatchFile.h"
 
@@ -80,12 +81,228 @@ int PatchFile::startPatchUseCMD(int argc, char* argv[]) {
 	}
 }
 
+vector<int> PatchFile::calcLastRowDistance(int stOldPos, int enOldPos, int stNewPos, int enNewPos) {
+
+	const int N_ROWS = 2;
+
+	int sizeOld = enOldPos - stOldPos + 1;
+	int sizeNew = enNewPos - stNewPos + 1;
+
+	int **dp = new int*[N_ROWS];
+	for(int i = 0; i < N_ROWS; i++) {
+		dp[i] = new int[sizeNew + 1];
+	}
+
+	int activeRow = 0;
+	for(int j = 0; j <= sizeNew; j++) {
+		dp[activeRow][j] = j;
+	}
+
+	for(int i = 1; i <= sizeOld; i++) {
+
+		activeRow = 1 - activeRow;
+
+		dp[activeRow][0]     = i;
+		dp[1 - activeRow][0] = i - 1;
+
+		for(int j = 1; j <= sizeNew; j++) {
+			dp[activeRow][j] = min(dp[1 - activeRow][j] + 1, dp[activeRow][j - 1] + 1);
+			dp[activeRow][j] = min(dp[activeRow][j], 		 dp[1 - activeRow][j - 1] + (vecHashOld[stOldPos + i - 1] != vecHashNew[stNewPos + j - 1]));
+		}
+	}
+
+	vector<int> vecLastRow;
+	for(int j = 1; j <= sizeNew; j++) {
+		vecLastRow.push_back(dp[activeRow][j]);
+	}
+
+	return vecLastRow;
+}
+
+vector<int> PatchFile::calcLastRowDistanceInverse(int stOldPos, int enOldPos, int stNewPos, int enNewPos) {
+
+	const int N_ROWS = 2;
+
+	int sizeOld = enOldPos - stOldPos + 1;
+	int sizeNew = enNewPos - stNewPos + 1;
+
+	int **dp = new int*[N_ROWS];
+	for(int i = 0; i < N_ROWS; i++) {
+		dp[i] = new int[sizeNew + 1];
+	}
+
+	int activeRow = 0;
+	for(int j = 0; j <= sizeNew; j++) {
+		dp[activeRow][j] = sizeNew - j;
+	}
+
+	for(int i = sizeOld - 1; i >= 0; i--) {
+
+		activeRow = 1 - activeRow;
+
+		dp[activeRow][sizeNew]     = sizeOld - i;
+		dp[1 - activeRow][sizeNew] = sizeOld - i - 1;
+
+		for(int j = sizeNew - 1; j >= 0; j--) {
+			dp[activeRow][j] = min(dp[1 - activeRow][j] + 1, dp[activeRow][j + 1] + 1);
+			dp[activeRow][j] = min(dp[activeRow][j], 		 dp[1 - activeRow][j + 1] + (vecHashOld[i + stOldPos] != vecHashNew[j + stNewPos]));
+		}
+	}
+
+	vector<int> vecLastRow;
+	for(int j = 0; j < sizeNew; j++) {
+		vecLastRow.push_back(dp[activeRow][j]);
+	}
+
+	return vecLastRow;
+}
+
+string PatchFile::prepareFileRow(char operation, int row, string text) {
+	stringstream ss;
+	ss << operation << " (" << row << "):" << text;
+	return ss.str();
+}
+
+vector<string> PatchFile::calcMinPrescription(int stOldPos, int enOldPos, int stNewPos, int enNewPos) {
+
+	int sizeOld = enOldPos - stOldPos + 1;
+	int sizeNew = enNewPos - stNewPos + 1;
+
+	vector<string> vecPrescription;
+
+	if(stOldPos > enOldPos) {
+		for(int i = stNewPos; i <= enNewPos; i++) {
+			vecPrescription.push_back(prepareFileRow('+', i, vecFileNew[i]));
+		}
+		return vecPrescription;
+	}
+
+	if(stNewPos > enNewPos) {
+		for(int i = stOldPos; i <= enOldPos; i++) {
+			vecPrescription.push_back(prepareFileRow('-', i, vecFileOld[i]));
+		}
+		return vecPrescription;
+	}
+
+	if(sizeNew == 1 || sizeOld == 1) {
+		if(sizeOld > 1) {
+			int indEqual = enOldPos;
+			for(int i = stOldPos; i <= enOldPos; i++) {
+				if(vecHashOld[i] == vecHashNew[stNewPos]) {
+					indEqual = i;
+					break;
+				}
+			}
+			for(int i = stOldPos; i <= enOldPos; i++) {
+				if(i == indEqual) {
+					if(vecHashOld[i] != vecHashNew[stNewPos]) {
+						vecPrescription.push_back(prepareFileRow('^', i, vecFileNew[stNewPos]));
+					}
+				} else {
+					vecPrescription.push_back(prepareFileRow('-', i, vecFileOld[i]));
+				}
+			}
+		} else if(sizeNew > 1) {
+			int indEqual = enNewPos;
+			for(int i = stNewPos; i <= enNewPos; i++) {
+				if(vecHashOld[stOldPos] == vecHashNew[i]) {
+					indEqual = i;
+					break;
+				}
+			}
+			for(int i = stNewPos; i <= enNewPos; i++) {
+				if(i == indEqual) {
+					if(vecHashOld[stOldPos] != vecHashNew[i]) {
+						vecPrescription.push_back(prepareFileRow('^', stOldPos, vecFileNew[i]));
+					}
+				} else {
+					vecPrescription.push_back(prepareFileRow('+', i, vecFileNew[i]));
+				}
+			}
+		} else {
+			if(vecHashOld[stOldPos] != vecHashNew[stNewPos]) {
+				vecPrescription.push_back(prepareFileRow('^', stOldPos, vecFileNew[stNewPos]));
+			}
+		}
+		return vecPrescription;
+	}
+
+	vector<string> vecLePrescription, vecRiPrescription;
+
+	if(sizeOld > sizeNew) {
+		int midOldPos = (enOldPos + stOldPos) / 2;
+
+		int leOldSize = midOldPos - stOldPos + 1;
+		int riOldSize = sizeOld - leOldSize;
+
+		vector<int> vecLastRowDist = calcLastRowDistance(stOldPos, midOldPos, stNewPos, enNewPos);
+		vector<int> vecLastRowDistInverse = calcLastRowDistanceInverse(midOldPos + 1, enOldPos, stNewPos, enNewPos);
+
+		int minInd;
+		int minVal;
+		for(int i = -1; i < sizeNew; i++) {
+			if(i == -1) {
+				minInd = i;
+				minVal = vecLastRowDistInverse[i + 1] + leOldSize;
+			} else if(i == sizeNew - 1) {
+				if(vecLastRowDist[i] + riOldSize < minVal) {
+					minInd = i;
+					minVal = vecLastRowDist[i] + riOldSize;
+				}
+			} else {
+				if(vecLastRowDist[i] + vecLastRowDistInverse[i + 1] < minVal) {
+					minInd = i;
+					minVal = vecLastRowDist[i] + vecLastRowDistInverse[i + 1];
+				}
+			}
+		}
+
+		vecLePrescription = calcMinPrescription(stOldPos, midOldPos, stNewPos, stNewPos + minInd);
+		vecRiPrescription = calcMinPrescription(midOldPos + 1, enOldPos, stNewPos + minInd + 1, enNewPos);
+
+	} else {
+		int midNewPos = (enNewPos + stNewPos) / 2;
+
+		int leNewSize = midNewPos - stNewPos + 1;
+		int riNewSize = sizeNew - leNewSize;
+
+		vector<int> vecLastRowDist = calcLastRowDistance(stNewPos, midNewPos, stOldPos, enOldPos);
+		vector<int> vecLastRowDistInverse = calcLastRowDistanceInverse(midNewPos + 1, enNewPos,  stOldPos, enOldPos);
+
+		int minInd;
+		int minVal;
+		for(int i = -1; i < sizeOld; i++) {
+			if(i == -1) {
+				minInd = i;
+				minVal = vecLastRowDistInverse[i + 1] + leNewSize;
+			} else if(i == sizeOld - 1) {
+				if(vecLastRowDist[i] + riNewSize < minVal) {
+					minInd = i;
+					minVal = vecLastRowDist[i] + riNewSize;
+				}
+			} else {
+				if(vecLastRowDist[i] + vecLastRowDistInverse[i + 1] < minVal) {
+					minInd = i;
+					minVal = vecLastRowDist[i] + vecLastRowDistInverse[i + 1];
+				}
+			}
+		}
+
+		vecLePrescription = calcMinPrescription(stOldPos, stOldPos + minInd, stNewPos, midNewPos);
+		vecRiPrescription = calcMinPrescription(stOldPos + minInd + 1, enOldPos, midNewPos + 1, enNewPos);
+	}
+
+	vecLePrescription.insert(vecLePrescription.end(), vecRiPrescription.begin(), vecRiPrescription.end());
+
+	return vecLePrescription;
+}
+
 bool PatchFile::createPatch(const string& fileNameOld, const string& fileNameNew, const string& fileNamePatch) {
 
 	string line;
 
-	vector<string> vecFileOld;
-	vector<long long> vecHashOld;
+	vecFileOld.clear();
+	vecHashOld.clear();
 
 	ifstream fileOld;
 	fileOld.open(fileNameOld.c_str());
@@ -95,7 +312,6 @@ bool PatchFile::createPatch(const string& fileNameOld, const string& fileNameNew
 		return false;
 	}
 
-	// Loading old file, calculating for each row a hash value
 	int cntRowFileOld = 0;
 	while(getline(fileOld, line)) {
 		vecFileOld.push_back(line);
@@ -104,8 +320,8 @@ bool PatchFile::createPatch(const string& fileNameOld, const string& fileNameNew
 	}
 	fileOld.close();
 
-	vector<string> vecFileNew;
-	vector<long long> vecHashNew;
+	vecFileNew.clear();
+	vecHashNew.clear();
 
 	ifstream fileNew;
 	fileNew.open(fileNameNew.c_str());
@@ -115,7 +331,6 @@ bool PatchFile::createPatch(const string& fileNameOld, const string& fileNameNew
 		return false;
 	}
 
-	// Loading new file, calculating for each row a hash value
 	int cntRowFileNew = 0;
 	while(getline(fileNew, line)) {
 		vecFileNew.push_back(line);
@@ -124,70 +339,7 @@ bool PatchFile::createPatch(const string& fileNameOld, const string& fileNameNew
 	}
 	fileNew.close();
 
-	// Initializing structures for path and calculation
-	pair<int, int> **parent = new pair<int, int>*[cntRowFileOld + 1];
-	for(int i = 0; i <= cntRowFileOld; i++) {
-		parent[i] = new pair<int, int>[cntRowFileNew + 1];
-	}
-
-	int **dp = new int*[cntRowFileOld + 1];
-	for(int i = 0; i <= cntRowFileOld; i++) {
-		dp[i] = new int[cntRowFileNew + 1];
-	}
-
-	for(int i = 0; i <= cntRowFileOld; i++) {
-		dp[i][0] = i;
-	}
-	for(int i = 0; i <= cntRowFileNew; i++) {
-		dp[0][i] = i;
-	}
-
-	// Searching minimum difference between two files
-	for(int i = 1; i <= cntRowFileOld; i++) {
-		for(int j = 1; j <= cntRowFileNew; j++) {
-
-			dp[i][j] = dp[i - 1][j] + 1;
-			parent[i][j] = make_pair(i - 1, j);
-
-			if(dp[i][j - 1] + 1 < dp[i][j]) {
-				dp[i][j] = dp[i][j - 1] + 1;
-				parent[i][j] = make_pair(i, j - 1);
-			}
-
-			int isEqualRows = (vecHashOld[i - 1] == vecHashNew[j - 1]);
-			if(dp[i][j] > dp[i - 1][j - 1] + !isEqualRows) {
-				dp[i][j] = dp[i - 1][j - 1] + !isEqualRows;
-				parent[i][j] = make_pair(i - 1, j - 1);
-			}
-		}
-	}
-
-	// Recovering the shortest path between two files
-	vector<pair<int, int> > vecPath;
-
-	int indx = cntRowFileOld;
-	int indy = cntRowFileNew;
-
-	while(indx >= 0 && indy >= 0) {
-
-		vecPath.push_back(make_pair(indx, indy));
-
-		if(indx == 0) {
-			indy--;
-			continue;
-		}
-
-		if(indy == 0) {
-			indx--;
-			continue;
-		}
-
-		int indxNew = parent[indx][indy].first;
-		int indyNew = parent[indx][indy].second;
-
-		indx = indxNew;
-		indy = indyNew;
-	}
+	vector<string> vecPatch = calcMinPrescription(0, cntRowFileOld - 1, 0, cntRowFileNew - 1);
 
 	ofstream filePatch;
 	filePatch.open(fileNamePatch.c_str());
@@ -196,25 +348,8 @@ bool PatchFile::createPatch(const string& fileNameOld, const string& fileNameNew
 		return false;
 	}
 
-	// Building patch-file
-	for(int i = (int)vecPath.size() - 1; i > 0; i--) {
-		int x = vecPath[i].first;
-		int y = vecPath[i].second;
-
-		int dx = x - vecPath[i - 1].first;
-		int dy = y - vecPath[i - 1].second;
-
-		if(dx && dy) {
-			if(vecHashOld[x] != vecHashNew[y]) {
-				filePatch << "^ (" << x << "):" << vecFileNew[y] << endl;
-			}
-		} else {
-			if(dx) {
-				filePatch << "- (" << x << "):" << vecFileOld[x] << endl;
-			} else if(dy) {
-				filePatch << "+ (" << y << "):" << vecFileNew[y] << endl;
-			}
-		}
+	for(int i = 0; i < (int)vecPatch.size(); i++) {
+		filePatch << vecPatch[i] << endl;
 	}
 
 	filePatch.close();
@@ -228,7 +363,6 @@ bool PatchFile::mergePatch(const string& fileNameOld, const string& fileNamePatc
 
 	vector<string> vecFileOld;
 
-	// Loading old file
 	ifstream fileOld;
 	fileOld.open(fileNameOld.c_str());
 
@@ -246,7 +380,6 @@ bool PatchFile::mergePatch(const string& fileNameOld, const string& fileNamePatc
 
 	vector<string> vecFilePatch;
 
-	// Loading patch-file
 	ifstream filePatch;
 	filePatch.open(fileNamePatch.c_str());
 
@@ -269,7 +402,6 @@ bool PatchFile::mergePatch(const string& fileNameOld, const string& fileNamePatc
 		return false;
 	}
 
-	// Building new file version
 	vector<string> vecFileNew;
 
 	int indFileOld       = 0;

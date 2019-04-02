@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <stdlib.h>
+#include <time.h>
 #include "../PatchFile.h"
 
 using namespace std;
@@ -12,31 +13,35 @@ int main(int argc, char* argv[]) {
 	srand (time(NULL));
 
 	const string TEST_NAME = "test_1";
-	int TEST_COUNT = 10;
+	int TEST_COUNT    = 10;
+	int MAX_FILE_ROWS = 3000;
 
-	if(argc == 2) {
+	if(argc >= 2) {
 		TEST_COUNT = atoi(argv[1]);
 	}
+	if(argc >= 3) {
+		MAX_FILE_ROWS = atoi(argv[2]);
+	}
 
-	const string OLD_FILE_NAME   	     = TEST_NAME + "_old_file.txt";
-	const string NEW_FILE_NAME   	     = TEST_NAME + "_new_file.txt";
-	const string PATCH_FILE_NAME 	     = TEST_NAME + "_patch_file.txt";
+	const string OLD_FILE_NAME   	   = TEST_NAME + "_old_file.txt";
+	const string NEW_FILE_NAME   	   = TEST_NAME + "_new_file.txt";
+	const string PATCH_FILE_NAME 	   = TEST_NAME + "_patch_file.txt";
 	const string NEW_PATCHED_FILE_NAME = TEST_NAME + "_new_patched_file.txt";
 
 	// Generating test data
 	while(TEST_COUNT--) {
 
-		int ROW_FILE_COUNT = rand() % 1000 + 100;
+		int ROW_FILE_COUNT = rand() % MAX_FILE_ROWS + 1;
 
 		fstream fileOld;
-		fileOld.open(OLD_FILE_NAME.c_str());
+		fileOld.open(OLD_FILE_NAME.c_str(), fstream::out);
 		if(!fileOld.is_open()) {
 			cerr << "Can not create or open file " << OLD_FILE_NAME << endl;
 			return 1;
 		}
 
 		fstream fileNew;
-		fileNew.open(NEW_FILE_NAME.c_str());
+		fileNew.open(NEW_FILE_NAME.c_str(), fstream::out);
 		if(!fileNew.is_open()) {
 			cerr << "Can not create or open file " << NEW_FILE_NAME << endl;
 			return 1;
@@ -80,7 +85,7 @@ int main(int argc, char* argv[]) {
 		cout << "Finished. Time elapsed: " << double(time_end - time_start) / CLOCKS_PER_SEC << endl;
 
 		// Validating result
-		fileNew.open(NEW_FILE_NAME.c_str());
+		fileNew.open(NEW_FILE_NAME.c_str(), fstream::in);
 		if(!fileNew.is_open()) {
 			cerr << "Can not create or open file " << NEW_FILE_NAME << endl;
 			return 1;
@@ -94,7 +99,7 @@ int main(int argc, char* argv[]) {
 		fileNew.close();
 
 		fstream fileNewPatched;
-		fileNewPatched.open(NEW_PATCHED_FILE_NAME.c_str());
+		fileNewPatched.open(NEW_PATCHED_FILE_NAME.c_str(), fstream::in);
 		if(!fileNewPatched.is_open()) {
 			cerr << "Can not create or open file " << NEW_PATCHED_FILE_NAME << endl;
 			return 1;
