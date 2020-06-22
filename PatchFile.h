@@ -8,6 +8,10 @@ class PatchFile
 {
 private:
 
+   static const char SYMBOL_NEW_LINE;
+   static const char SYMBOL_EDIT_LINE;
+   static const char SYMBOL_DELETE_LINE;
+
    std::vector<std::string> vecFileOld, vecFileNew;
    std::vector<long long> vecHashOld, vecHashNew;
 

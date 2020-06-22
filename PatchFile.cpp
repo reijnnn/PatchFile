@@ -7,6 +7,10 @@
 
 using namespace std;
 
+const char PatchFile::SYMBOL_NEW_LINE = '+';
+const char PatchFile::SYMBOL_EDIT_LINE = '^';
+const char PatchFile::SYMBOL_DELETE_LINE = '-';
+
 void PatchFile::printHelp() {
    cerr << "Options:\n"
         << "\t-h,--help\tShow help message\n"
@@ -171,14 +175,14 @@ vector<string> PatchFile::calcMinPrescription(int stOldPos, int enOldPos, int st
 
    if(stOldPos > enOldPos) {
       for(int i = stNewPos; i <= enNewPos; i++) {
-         vecPrescription.push_back(prepareFileRow('+', i, vecFileNew[i]));
+         vecPrescription.push_back(prepareFileRow(SYMBOL_NEW_LINE, i, vecFileNew[i]));
       }
       return vecPrescription;
    }
 
    if(stNewPos > enNewPos) {
       for(int i = stOldPos; i <= enOldPos; i++) {
-         vecPrescription.push_back(prepareFileRow('-', i, vecFileOld[i]));
+         vecPrescription.push_back(prepareFileRow(SYMBOL_DELETE_LINE, i, vecFileOld[i]));
       }
       return vecPrescription;
    }
@@ -195,10 +199,10 @@ vector<string> PatchFile::calcMinPrescription(int stOldPos, int enOldPos, int st
          for(int i = stOldPos; i <= enOldPos; i++) {
             if(i == indEqual) {
                if(vecHashOld[i] != vecHashNew[stNewPos]) {
-                  vecPrescription.push_back(prepareFileRow('^', i, vecFileNew[stNewPos]));
+                  vecPrescription.push_back(prepareFileRow(SYMBOL_EDIT_LINE, i, vecFileNew[stNewPos]));
                }
             } else {
-               vecPrescription.push_back(prepareFileRow('-', i, vecFileOld[i]));
+               vecPrescription.push_back(prepareFileRow(SYMBOL_DELETE_LINE, i, vecFileOld[i]));
             }
          }
       } else if(sizeNew > 1) {
@@ -212,15 +216,15 @@ vector<string> PatchFile::calcMinPrescription(int stOldPos, int enOldPos, int st
          for(int i = stNewPos; i <= enNewPos; i++) {
             if(i == indEqual) {
                if(vecHashOld[stOldPos] != vecHashNew[i]) {
-                  vecPrescription.push_back(prepareFileRow('^', stOldPos, vecFileNew[i]));
+                  vecPrescription.push_back(prepareFileRow(SYMBOL_EDIT_LINE, stOldPos, vecFileNew[i]));
                }
             } else {
-               vecPrescription.push_back(prepareFileRow('+', i, vecFileNew[i]));
+               vecPrescription.push_back(prepareFileRow(SYMBOL_NEW_LINE, i, vecFileNew[i]));
             }
          }
       } else {
          if(vecHashOld[stOldPos] != vecHashNew[stNewPos]) {
-            vecPrescription.push_back(prepareFileRow('^', stOldPos, vecFileNew[stNewPos]));
+            vecPrescription.push_back(prepareFileRow(SYMBOL_EDIT_LINE, stOldPos, vecFileNew[stNewPos]));
          }
       }
       return vecPrescription;
@@ -414,9 +418,8 @@ bool PatchFile::mergePatch(const string& fileNameOld, const string& fileNamePatc
    while(indFileOld < cntRowFileOld) {
 
       if(indFilePatch != indFilePatchPred) {
-         if(indFilePatch == cntRowFilePatch) {
-            filePatchRowOperType = 'X';
-         } else {
+         filePatchRowOperType = '\0';
+         if(indFilePatch != cntRowFilePatch) {
             sscanf(vecFilePatch[indFilePatch].c_str(), "%*s (%d):", &filePatchRowNum);
             filePatchRowData = vecFilePatch[indFilePatch].substr(vecFilePatch[indFilePatch].find(":") + 1, -1);
             filePatchRowOperType = vecFilePatch[indFilePatch][0];
@@ -424,19 +427,19 @@ bool PatchFile::mergePatch(const string& fileNameOld, const string& fileNamePatc
          indFilePatchPred = indFilePatch;
       }
 
-      if(filePatchRowOperType == '+') {
+      if(filePatchRowOperType == SYMBOL_NEW_LINE) {
          if((int)vecFileNew.size() == filePatchRowNum) {
             vecFileNew.push_back(filePatchRowData);
             indFilePatch++;
             continue;
          }
-      } else if(filePatchRowOperType == '-') {
+      } else if(filePatchRowOperType == SYMBOL_DELETE_LINE) {
          if(indFileOld == filePatchRowNum) {
             indFileOld++;
             indFilePatch++;
             continue;
          }
-      } else if(filePatchRowOperType == '^') {
+      } else if(filePatchRowOperType == SYMBOL_EDIT_LINE) {
          if(indFileOld == filePatchRowNum) {
             vecFileNew.push_back(filePatchRowData);
             indFileOld++;
@@ -454,7 +457,7 @@ bool PatchFile::mergePatch(const string& fileNameOld, const string& fileNamePatc
       filePatchRowData = vecFilePatch[indFilePatch].substr(vecFilePatch[indFilePatch].find(":") + 1, -1);
       filePatchRowOperType = vecFilePatch[indFilePatch][0];
 
-      if(filePatchRowOperType == '+') {
+      if(filePatchRowOperType == SYMBOL_NEW_LINE) {
          vecFileNew.push_back(filePatchRowData);
       }
 
